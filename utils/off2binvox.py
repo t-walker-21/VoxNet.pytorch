@@ -13,7 +13,7 @@ import glob
 
 DATA_ROOT = '../data/ModelNet10'
 
-CLASSES = {'bathtub', 'chair', 'dresser', 'night_stand', 'sofa', 'toilet', 'bed', 'desk', 'monitor', 'table'}
+CLASSES = {'toilet'}
 
 for c in CLASSES:
     for split in ['test', 'train']:
@@ -23,4 +23,7 @@ for c in CLASSES:
             if os.path.exists(binname):
                 print(binname, "exits, continue...")
                 continue
-            os.system(f'./binvox -d 32 -cb -pb {off}')
+
+            command = "./binvox -d 64 -cb -pb " + off
+
+            os.system(command)
