@@ -143,9 +143,7 @@ class ModelNet10(Dataset):
 
     def __getitem__(self, idx):
 
-        
-        #idx = np.random.randint(2)
-        idx = 30
+        #idx = 30
         sample_name = self.samples_str[idx]
         cls_name = re.split(r"_\d+\.binvox", os.path.basename(sample_name))[0]
         cls_idx = self.cls2idx[cls_name]
@@ -167,18 +165,20 @@ class ModelNet10(Dataset):
         cloud = voxel_to_pointcloud(data[0])
         cloud_canon = voxel_to_pointcloud(data_canon[0])
 
-        #rot = np.eye(3)
-        rot = rand_rotation_matrix()
+        cloud_tensor = torch.Tensor([cloud])
+        cloud_canon_tensor = torch.Tensor([cloud_canon])
 
-        for point in cloud:
-            rotated.append(np.dot(point, rot))
+        rot = np.eye(3)
+        #rot = rand_rotation_matrix()
 
-        for point in cloud_canon:
-            rotated_canon.append(np.dot(point, rot))
+        rot_tensor = torch.Tensor(rot).view(1, 9)
+        rot_tensor = rot_tensor.repeat(1, 1).view(1, 3, 3)
 
-
-        rotated = np.array(rotated)
-        rotated_canon = np.array(rotated_canon)
+        cloud_tensor_rotated = torch.bmm(cloud_tensor, rot_tensor)
+        cloud_canon_tensor_rotated = torch.bmm(cloud_canon_tensor, rot_tensor)
+        
+        rotated = cloud_tensor_rotated[0].detach().cpu().numpy()
+        rotated_canon = cloud_canon_tensor_rotated[0].detach().cpu().numpy()
 
         vox_rotated = point_cloud_to_voxel(rotated)
         vox_rotated_canon = point_cloud_to_voxel(rotated_canon)
