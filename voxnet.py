@@ -158,7 +158,7 @@ class VoxNetSkips(nn.Module):
         # 6 6 6
 
         self.up1 = torch.nn.ConvTranspose3d(128, 32, 5, 2)
-        self.up2 = torch.nn.ConvTranspose3d(32, 1, 4, 2)
+        self.up2 = torch.nn.ConvTranspose3d(64, 1, 4, 2)
         self.relu = torch.nn.ReLU()
 
     def forward(self, x):
@@ -195,7 +195,7 @@ class VoxNetSkips(nn.Module):
         #print (x.shape)
 
         # Skip via addition
-        x = x + x_1
+        x = torch.cat((x, x_1), 1)
 
         x = self.up2(x)
 
