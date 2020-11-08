@@ -74,18 +74,26 @@ class VoxNetSegmentation(nn.Module):
     def forward(self, x):
         x = self.feat(x)
 
-        #print ("bottleneck")
-        #print (x.shape)
+        print ("bottleneck")
+        print (x.shape)
 
         x = self.up1(x)
         x = self.relu(x)
+
+        print ("LEVEL 1 SHAPE")
+        print (x.shape)
+
         x = self.up2(x)
         x = self.relu(x)
+
+        print ("LEVEL 2 SHAPE")
+        print (x.shape)
+
         x = self.up3(x)
 
-        #print (x.shape)
-
-        #exit()
+        print ("OUTPUT SHAPE")
+        print (x.shape)
+        exit()
 
         
         x = torch.sigmoid(x)
@@ -136,6 +144,65 @@ class VoxNetSegmentationV2(nn.Module):
         x = torch.sigmoid(x)
 
         #print (x.shape)
+
+        return x
+
+class VoxNetSkips(nn.Module):
+    def __init__(self):
+        super(VoxNetSkips, self).__init__()
+        self.conv1 = torch.nn.Conv3d(in_channels=1, out_channels=32, kernel_size=3, stride=2)
+        self.conv2 = torch.nn.Conv3d(in_channels=32, out_channels=64, kernel_size=3, stride=2)
+        self.conv3 = torch.nn.Conv3d(in_channels=64, out_channels=128, kernel_size=2)
+
+        # print (x.shape)
+        # 6 6 6
+
+        self.up1 = torch.nn.ConvTranspose3d(128, 32, 5, 2)
+        self.up2 = torch.nn.ConvTranspose3d(32, 1, 4, 2)
+        self.relu = torch.nn.ReLU()
+
+    def forward(self, x):
+
+        #print ("INPUT SHAPE")
+        #print (x.shape)
+
+        x = self.conv1(x)
+        x = self.relu(x)
+
+        #print ("LEVEL 1")
+        #print (x.shape)
+
+        x_1 = x
+
+        x = self.conv2(x)
+        x = self.relu(x)
+
+        #print ("LEVEL 2")
+        #print (x.shape)
+
+        x = self.conv3(x)
+        x = self.relu(x)
+
+        #print ("LEVEL 3")
+        #print (x.shape)
+
+        #x = self.feat(x)
+
+        x = self.up1(x)
+        x = self.relu(x)
+
+        #print ("LEVEL 4")
+        #print (x.shape)
+
+        # Skip via addition
+        x = x + x_1
+
+        x = self.up2(x)
+
+        #print ("LEVEL 5")
+        #print (x.shape)
+
+        x = torch.sigmoid(x)
 
         return x
 
