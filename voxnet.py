@@ -11,7 +11,7 @@ Description: VoxNet 网络结构
 import torch
 import torch.nn as nn
 from collections import OrderedDict
-
+import torch.nn.functional as F
 
 class VoxNet(nn.Module):
     def __init__(self, n_classes=10, input_shape=(32, 32, 32)):
@@ -74,26 +74,26 @@ class VoxNetSegmentation(nn.Module):
     def forward(self, x):
         x = self.feat(x)
 
-        print ("bottleneck")
-        print (x.shape)
+        #print ("bottleneck")
+        #print (x.shape)
 
         x = self.up1(x)
         x = self.relu(x)
 
-        print ("LEVEL 1 SHAPE")
-        print (x.shape)
+        #print ("LEVEL 1 SHAPE")
+        #print (x.shape)
 
         x = self.up2(x)
         x = self.relu(x)
 
-        print ("LEVEL 2 SHAPE")
-        print (x.shape)
+        #print ("LEVEL 2 SHAPE")
+        #print (x.shape)
 
         x = self.up3(x)
 
-        print ("OUTPUT SHAPE")
-        print (x.shape)
-        exit()
+        #print ("OUTPUT SHAPE")
+        #print (x.shape)
+        #exit()
 
         
         x = torch.sigmoid(x)
@@ -152,14 +152,13 @@ class VoxNetSkips(nn.Module):
         super(VoxNetSkips, self).__init__()
         self.conv1 = torch.nn.Conv3d(in_channels=1, out_channels=32, kernel_size=3, stride=2)
         self.conv2 = torch.nn.Conv3d(in_channels=32, out_channels=64, kernel_size=3, stride=2)
-        self.conv3 = torch.nn.Conv3d(in_channels=64, out_channels=128, kernel_size=2)
+        self.conv3 = torch.nn.Conv3d(in_channels=64, out_channels=128, kernel_size=3, stride=2)
+        self.conv4 = torch.nn.Conv3d(in_channels=128, out_channels=128, kernel_size=3)
 
-        # print (x.shape)
-        # 6 6 6
-
-        self.up1 = torch.nn.ConvTranspose3d(128, 32, 5, 2)
-        self.up2 = torch.nn.ConvTranspose3d(64, 1, 4, 2)
-        self.relu = torch.nn.ReLU()
+        self.up1 = torch.nn.ConvTranspose3d(128, 128, 3, 1)
+        self.up2 = torch.nn.ConvTranspose3d(256, 64, 3, 2)
+        self.up3 = torch.nn.ConvTranspose3d(128, 32, 3, 2)
+        self.up4 = torch.nn.ConvTranspose3d(64, 1, 4, 2)
 
     def forward(self, x):
 
@@ -167,7 +166,7 @@ class VoxNetSkips(nn.Module):
         #print (x.shape)
 
         x = self.conv1(x)
-        x = self.relu(x)
+        x = F.relu(x)
 
         #print ("LEVEL 1")
         #print (x.shape)
@@ -175,31 +174,58 @@ class VoxNetSkips(nn.Module):
         x_1 = x
 
         x = self.conv2(x)
-        x = self.relu(x)
+        x = F.relu(x)
+
+        x_2 = x
 
         #print ("LEVEL 2")
         #print (x.shape)
 
         x = self.conv3(x)
-        x = self.relu(x)
+        x = F.relu(x)
 
         #print ("LEVEL 3")
         #print (x.shape)
 
-        #x = self.feat(x)
+        x_3 = x
+
+        x = self.conv4(x)
+        x = F.relu(x)
+
+        #print ("LEVEL 4, BOTTLENECK")
+        #print (x.shape)
 
         x = self.up1(x)
-        x = self.relu(x)
+        x = F.relu(x)
 
-        #print ("LEVEL 4")
+        #print ("LEVEL UP 1")
         #print (x.shape)
 
         # Skip via addition
-        x = torch.cat((x, x_1), 1)
+        x = torch.cat((x, x_3), 1)
 
         x = self.up2(x)
+        x = F.relu(x)
 
-        #print ("LEVEL 5")
+        #print ("LEVEL UP 2")
+        #print (x.shape)
+        
+        x = torch.cat((x, x_2), 1)
+
+        #print ("LEVEL 2 OUT CONCAT")
+        #print (x.shape)
+        
+        x = self.up3(x)
+        x = F.relu(x)
+
+        #print ("LEVEL 3")
+        #print (x.shape)
+
+        x = torch.cat((x, x_1), 1)
+
+        x = self.up4(x)
+
+        #print ("LEVEL 4 UP")
         #print (x.shape)
 
         x = torch.sigmoid(x)
